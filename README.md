@@ -1,5 +1,5 @@
-##**Miro Invite** 
+**Miro Invite** 
 https://miro.com/welcome/UFdRMHBqVXdQc21PMmtuWVM2NlYxQUR0MEtDZ2VaeVdDWHI0c0FJQXpiV3gwM1pkVjk4MEtxb1F0VC82aGlhalVJODB2ZC90dExIQlQ0c05MdFpZSkJ3NHYxRFBTcnJqSWZCRXo1L0o1OFdSZ3hBVWhwZ09NYjVXbENZcVVPMFl3VHhHVHd5UWtSM1BidUtUYmxycDRnPT0hdjE=?share_link_id=79633529942
 
-###**Miro Project Board**
+**Miro Project Board**
 https://miro.com/app/board/uXjVJ_QxRt4=/?share_link_id=932524027687
