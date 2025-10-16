@@ -1,0 +1,83 @@
+import datetime
+from typing import Optional, Type
+
+from sqlalchemy.orm import Session
+import logging
+
+from DataBase.models import Users
+
+user_repo_logger = logging.getLogger(__name__)
+
+
+class UserRepo:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create_user(self, user_id: str, tag: str, create_time: datetime.datetime) -> Users:
+        try:
+            user = Users(user_id=user_id, tag=tag, create_time=create_time)
+            self.db.add(user)
+            self.db.commit()
+            self.db.refresh(user)
+            user_repo_logger.info(f'Successful creation of a user [{repr(user)}] in the database')
+            return user
+        except Exception:
+            user_repo_logger.error(f'Error when creating a new user in the database', exc_info=True)
+
+    def get_user_by_id(self, user_id: int) -> Optional[Users] | None:
+        """
+        Func what find user in DataBase by him ID
+        :param user_id: Unique user ID
+        :return: User ORM model from DataBase
+        """
+        try:
+            user = self.db.query(Users).filter(Users.user_id == user_id).first()
+            user_repo_logger.info(f'Successfully retrieving the user [{repr(user)}] from the database')
+            return user
+        except Exception:
+            user_repo_logger.error(f'Error when getting user [{user_id}] from DataBase', exc_info=True)
+
+    def get_all_users(self) -> list[Type[Users]] | None:
+        try:
+            users = self.db.query(Users).all()
+            user_repo_logger.info('Successfully retrieving list of all users from the database')
+            return users
+        except Exception:
+            user_repo_logger.error(f'Error when getting all users from DataBase', exc_info=True)
+
+    def update_user(self, user_id: int, **new_values) -> Type[Users] | None:
+        """
+        Func what can update User properties in DataBase.
+        Receives the user's ID and kwargs as input and updates the user properties in the Database based on kwargs (key and value), if a kwarg is passed that is not in user properties, it will be ignored
+        :param user_id: User ID for updating properties
+        :param new_values: Kwargs what correspond to User ORM model properties
+        :return: User ORM model from DataBase
+        """
+        user = self.get_user_by_id(user_id)
+        try:
+            if user:
+                for key, value in new_values.items():
+                    if hasattr(user, key) and value is not None:
+                        setattr(user, key, value)
+                self.db.commit()
+                self.db.refresh(user)
+            user_repo_logger.info(f'Successfully update user [{repr(user)}] in DataBase')
+            return user
+        except Exception:
+            user_repo_logger.error(f'Error when updating user [{repr(user)}] in DataBase')
+
+    def delete_user(self, user_id: int) -> Type[Users] | None:
+        """
+        Func what deleting User by him ID
+        :param user_id: User ID for deleting
+        :return: User ORM model (yeah, he was deleted)
+        """
+        user = self.get_user_by_id(user_id)
+        try:
+            if user:
+                self.db.delete(user)
+                self.db.commit()
+                user_repo_logger.info(f'Successfully delete user [{repr(user)}] from DataBase')
+            return user
+        except Exception:
+            user_repo_logger.error(f'Error when deleting user [{repr(user)}] from Database')
