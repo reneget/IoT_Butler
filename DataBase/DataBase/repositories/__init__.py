@@ -1,2 +1,2 @@
 from .users_repo import *
-from .storage_repo import *
+from .devices_repo import *

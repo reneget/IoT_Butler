@@ -23,6 +23,6 @@ main_log.info('FastAPI object initialized')
 
 main_log.info('Connecting routers')
 app.include_router(API.user_router)
-# app.include_router(API.)
+app.include_router(API.device_router)
 main_log.info('Routers are connected')
 

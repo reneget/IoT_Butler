@@ -1,1 +1,1 @@
-from .routs import user_router
+from .routs import user_router, device_router

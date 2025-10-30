@@ -24,3 +24,25 @@ class UserCreate(BaseModel):
     user_id: int
     tag: str
     create_time: datetime.datetime
+
+class Device(BaseModel):
+    device_id: int
+    title: str
+    description: str
+    address: str
+    active: bool
+    create_time: datetime.datetime
+
+
+class DeviceUpdate(BaseModel):
+    title: Optional[str]
+    description: Optional[str]
+    address: Optional[str]
+    active: Optional[bool]
+
+class DeviceCreate(BaseModel):
+    device_id: int
+    title: str
+    description: str
+    address: str
+    create_time: datetime.datetime
