@@ -48,26 +48,26 @@ services:
       - loki
       - postgres
 
-  bot:
-    image: bot
-    build:
-      context: ./Bot
-    networks: 
-      - loki-net
-    develop:
-      watch:
-      - path: ./Bot
-        action: rebuild
-        # - path: ./Bot/handlers
-        #   action: sync
-        #   target: /app/handler
-        # - path: ./Bot/keyboards
-        #   action: sync
-        #   target: /app/keyboard
-
-    depends_on:
-      database:
-        condition: service_healthy
+#  bot:
+#    image: bot
+#    build:
+#      context: ./Bot
+#    networks:
+#      - loki-net
+#    develop:
+#      watch:
+#      - path: ./Bot
+#        action: rebuild
+#        # - path: ./Bot/handlers
+#        #   action: sync
+#        #   target: /app/handler
+#        # - path: ./Bot/keyboards
+#        #   action: sync
+#        #   target: /app/keyboard
+#
+#    depends_on:
+#      database:
+#        condition: service_healthy
 
 volumes:
   postgres_data:

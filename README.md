@@ -3,3 +3,7 @@ https://miro.com/welcome/UFdRMHBqVXdQc21PMmtuWVM2NlYxQUR0MEtDZ2VaeVdDWHI0c0FJQXp
 
 **Miro Project Board**:
 https://miro.com/app/board/uXjVJ_QxRt4=/?share_link_id=932524027687
+
+```commandline
+docker compose up --build -d
+```
