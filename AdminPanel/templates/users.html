@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2>Управление пользователями</h2>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User ID</th>
+            <th>Tag</th>
+            <th>Дата создания</th>
+            <th>Ban</th>
+            <th>Статус</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.user_id }}</td>
+            <td>{{ user.tag or '-' }}</td>
+            <td>
+                {% if user.create_time %}
+                    {% set dt = user.create_time.split('T') %}
+                    {% set date_part = dt[0].split('-') %}
+                    {% set time_part = dt[1].split('.')[0].split(':') %}
+                    {{ date_part[2] }}.{{ date_part[1] }}.{{ date_part[0] }} {{ time_part[0] }}:{{ time_part[1] }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                <form method="post" action="/users/update/{{ user.user_id }}" style="display: inline;">
+                    <label style="cursor: pointer;">
+                        <input type="checkbox" name="ban" {% if not user.active %}checked{% endif %} 
+                               onchange="this.form.submit()">
+                        <span>Ban</span>
+                    </label>
+                </form>
+            </td>
+            <td>
+                <span class="badge {% if user.active %}badge-success{% else %}badge-danger{% endif %}">
+                    {% if user.active %}Активен{% else %}Забанен{% endif %}
+                </span>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" style="text-align: center; padding: 2rem;">Нет пользователей</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
