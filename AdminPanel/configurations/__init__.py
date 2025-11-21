@@ -4,9 +4,6 @@ from .env_conf import EnvConfig
 env = EnvConfig.read()
 
 main_config = cf.Config(
-    loki=cf.LokiConfig(
-        url=env('LOKI_URL', default="http://loki:3100/loki/api/v1/push"),
-    ),
     api=cf.APIConfig(
         base_url=env('API_BASE_URL', default='http://database:8000')
     ),

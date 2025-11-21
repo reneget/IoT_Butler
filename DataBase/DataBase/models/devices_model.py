@@ -1,8 +1,6 @@
 from sqlalchemy import Column, String, Boolean, Integer, DateTime
-import logging
+from loguru import logger as devices_logger
 from DataBase.core.db_connection import Base
-
-devices_logger = logging.getLogger(__name__)
 
 
 class Devices(Base):

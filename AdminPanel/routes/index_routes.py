@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
-import logging
+from loguru import logger
 
 from auth import require_auth
 
 router: APIRouter = APIRouter()
-logger: logging.Logger = logging.getLogger(__name__)
 
 
 @router.get("/")

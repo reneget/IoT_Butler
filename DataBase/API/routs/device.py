@@ -6,9 +6,7 @@ from DataBase.core.db_connection import get_db
 from DataBase.repositories import DevicesRepo
 from ..utils import FunctionsAPI as Func_API
 
-import logging
-
-device_logger = logging.getLogger(__name__)
+from loguru import logger as device_logger
 
 device_router = APIRouter(
     prefix='/device',
@@ -37,10 +35,11 @@ async def create_device_api(device: pd_md.DeviceCreate, db: Session = Depends(ge
     except HTTPException:
         device_logger.error('An error occurred while creating the device', exc_info=True)
         raise
-    except:
+    except Exception as e:
         device_logger.error('An error occurred while creating the device', exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
 
 
@@ -62,10 +61,11 @@ async def get_device_by_id_api(device_id: int, db: Session = Depends(get_db)):
     except HTTPException:
         device_logger.error('Error getting device', exc_info=True)
         raise
-    except:
+    except Exception as e:
         device_logger.error('Error getting device', exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
 
 
@@ -80,10 +80,11 @@ async def get_all_devices_api(db: Session = Depends(get_db)):
         device_logger.info('Devices converted to pydantic model')
 
         return new_list
-    except:
+    except Exception as e:
         device_logger.error('Error getting all devices', exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
 
 
@@ -104,10 +105,11 @@ async def update_device_api(device_id: int, device: pd_md.DeviceUpdate, db: Sess
     except HTTPException:
         device_logger.error('Error updating device', exc_info=True)
         raise
-    except:
+    except Exception as e:
         device_logger.error('Error updating device', exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
 
 
@@ -127,10 +129,11 @@ async def delete_device_api(device_id: int, db: Session = Depends(get_db)):
     except HTTPException:
         device_logger.error('Error deleting device', exc_info=True)
         raise
-    except:
+    except Exception as e:
         device_logger.error('Error deleting device', exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
 
 

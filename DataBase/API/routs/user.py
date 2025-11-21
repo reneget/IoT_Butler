@@ -6,9 +6,7 @@ from DataBase.core.db_connection import get_db
 from DataBase.repositories import UserRepo
 from ..utils import FunctionsAPI as Func_API
 
-import logging
-
-user_logger = logging.getLogger(__name__)
+from loguru import logger as user_logger
 
 user_router = APIRouter(
     prefix='/user',
@@ -31,16 +29,17 @@ async def create_user_route(user: pd_md.UserCreate, db: Session = Depends(get_db
             )
         user_logger.debug(f'{repr(created_user)}')
         user_logger.info('New user created')
-        user_logger.info(f'User {created_user.user_id}|{created_user.tag}was issued a new token')
+        user_logger.info(f'User {created_user.user_id}|{created_user.tag} was issued a new token')
 
         return pd_md.User(**created_user.__dict__)
     except HTTPException:
         user_logger.error('An error occurred while creating the user', exc_info=True)
         raise
-    except:
+    except Exception as e:
         user_logger.error('An error occurred while creating the user', exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
 
 @user_router.get('/get/user/{user_id}')
@@ -61,10 +60,11 @@ async def get_user_by_id_api(user_id: int, db: Session = Depends(get_db)):
     except HTTPException:
         user_logger.error('Error getting user', exc_info=True)
         raise
-    except:
+    except Exception as e:
         user_logger.error('Error getting user', exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
 
 @user_router.get('/get/all/users')
@@ -78,10 +78,11 @@ async def get_all_user_api(db: Session = Depends(get_db)):
         user_logger.info('Users converted to pydantic model')
 
         return new_list
-    except:
+    except Exception as e:
         user_logger.error('Error getting all users', exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
 
 @user_router.put('/update/user/{user_id}')
@@ -97,14 +98,15 @@ async def update_user_api(user_id: int, user: pd_md.UserUpdate, db: Session = De
                 detail='User not found'
             )
 
-        return  pd_md.User(**new_user.__dict__)
+        return pd_md.User(**new_user.__dict__)
     except HTTPException:
         user_logger.error('Error updating user', exc_info=True)
         raise
-    except:
+    except Exception as e:
         user_logger.error('Error updating user', exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
     
 @user_router.delete('/delete/user/{user_id}')
@@ -123,10 +125,11 @@ async def delete_user_api(user_id: int, db: Session = Depends(get_db)):
     except HTTPException:
         user_logger.error('Error deleting user', exc_info=True)
         raise
-    except:
+    except Exception as e:
         user_logger.error('Error deleting user', exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
 
 @user_router.get('/health',
@@ -135,8 +138,10 @@ async def healthcheck_api():
     try:
         user_logger.info('Start healthcheck')
         return {'status': 'OK'}
-    except:
+    except Exception as e:
         user_logger.error('Error when healthcheck', exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail='none')
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 

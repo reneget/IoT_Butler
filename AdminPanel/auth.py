@@ -4,11 +4,9 @@ from starlette.responses import RedirectResponse
 from functools import wraps
 from typing import Callable, Any, Awaitable
 import secrets
-import logging
+from loguru import logger as auth_logger
 
 from configurations import main_config
-
-auth_logger: logging.Logger = logging.getLogger(__name__)
 security: HTTPBasic = HTTPBasic()
 
 

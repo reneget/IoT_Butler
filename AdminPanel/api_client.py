@@ -1,10 +1,8 @@
 import httpx
-import logging
 from typing import List, Dict, Any, Optional
 from configurations import main_config
 from fastapi import HTTPException
-
-api_logger: logging.Logger = logging.getLogger(__name__)
+from loguru import logger as api_logger
 
 
 class APIClient:

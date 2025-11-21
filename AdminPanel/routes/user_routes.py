@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Request, Form, HTTPException, status
+from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from typing import Dict, List, Any, Union
-from datetime import datetime
-import logging
+from loguru import logger
 
 from auth import require_auth
 from api_client import APIClient
@@ -11,7 +10,6 @@ from validation import validate_user_id
 
 router: APIRouter = APIRouter()
 templates: Jinja2Templates = Jinja2Templates(directory="templates")
-logger: logging.Logger = logging.getLogger(__name__)
 
 
 @router.get("/users", response_class=HTMLResponse)

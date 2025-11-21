@@ -4,9 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 
 from configurations import main_config
-import logging
-
-db_logger = logging.getLogger(__name__)
+from loguru import logger as db_logger
 engine = create_engine(main_config.db.db_url, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

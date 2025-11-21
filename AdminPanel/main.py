@@ -1,19 +1,10 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
-import logging
-import logging.config
 
 from configurations import main_config
 from routes import auth_routes, user_routes, index_routes
-from log import config
-
-logging.getLogger("urllib3").setLevel(logging.WARNING)
-logging.getLogger("httpx").setLevel(logging.WARNING)
-
-logging.config.dictConfig(config)
-main_logger = logging.getLogger(__name__)
+from log.config import logger
 
 app = FastAPI(title="Admin Panel")
 
@@ -30,7 +21,7 @@ app.include_router(index_routes.router)
 app.include_router(auth_routes.router)
 app.include_router(user_routes.router)
 
-main_logger.info("Admin Panel initialized")
+logger.info("Admin Panel initialized")
 
 
 if __name__ == "__main__":

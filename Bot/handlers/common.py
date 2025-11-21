@@ -1,10 +1,8 @@
-import logging
-from aiogram import Dispatcher, F
+from loguru import logger
+from aiogram import Dispatcher
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 from api_client import APIClient
-
-logger = logging.getLogger(__name__)
 
 
 async def cmd_start(message: Message):

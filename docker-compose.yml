@@ -1,20 +1,4 @@
 services: 
-  grafana:
-    image: grafana/grafana:latest
-    ports: 
-      - '3000:3000'
-    networks: 
-      - loki-net
-
-  loki:
-    image: grafana/loki:latest
-    ports: 
-      - '3100:3100'
-    networks: 
-      - loki-net
-    depends_on:
-      - grafana
-
   postgres: 
     image: postgres:13
     environment:
@@ -23,11 +7,8 @@ services:
       POSTGRES_PASSWORD: admin
     volumes:
       - postgres_data:/var/lib/postgresql/data 
-    depends_on:
-      - grafana
-      - loki
     networks:
-      - loki-net
+      - app-net
       
   database: 
     image: db
@@ -36,7 +17,7 @@ services:
     ports:
       - "8000:8000"
     networks: 
-      - loki-net
+      - app-net
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8000/user/health']
       interval: 1m30s
@@ -44,19 +25,26 @@ services:
       retries: 5
       start_period: 30s
     depends_on:
-      - grafana
-      - loki
       - postgres
+    volumes:
+      - ./logs:/app/logs
 
   bot:
     image: bot
     build:
       context: ./Bot
     networks:
-      - loki-net
+      - app-net
+    develop:
+      watch:
+      - path: ./Bot
+        action: rebuild
     depends_on:
       database:
         condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      
 
   adminpanel:
     image: adminpanel
@@ -65,14 +53,19 @@ services:
     ports:
       - "8001:8001"
     networks:
-      - loki-net
+      - app-net
     depends_on:
       database:
         condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - LOG_LEVEL=INFO
+      - LOG_FILE=/app/logs/adminpanel.log
 
 volumes:
   postgres_data:
     
 networks:
-  loki-net:
+  app-net:
     driver: bridge

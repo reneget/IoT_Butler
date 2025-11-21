@@ -2,11 +2,9 @@ import datetime
 from typing import Optional, Type
 
 from sqlalchemy.orm import Session
-import logging
+from loguru import logger as user_repo_logger
 
 from DataBase.models import Users
-
-user_repo_logger = logging.getLogger(__name__)
 
 
 class UserRepo:

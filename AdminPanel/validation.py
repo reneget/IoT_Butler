@@ -1,12 +1,9 @@
 """
 Validation functions for admin panel data
 """
-import re
-import logging
 from typing import Dict, Any, Optional, Tuple
 from urllib.parse import urlparse
-
-validation_logger: logging.Logger = logging.getLogger(__name__)
+from loguru import logger as validation_logger
 
 
 def validate_string_field(value: Optional[str], field_name: str, required: bool = False, 

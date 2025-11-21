@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from aiogram import Dispatcher, F
 from aiogram.filters import Command, StateFilter
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
@@ -6,14 +6,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from api_client import APIClient
 
-logger = logging.getLogger(__name__)
-
 
 class DeviceStates(StatesGroup):
     waiting_for_title = State()
     waiting_for_description = State()
     waiting_for_address = State()
-    waiting_for_device_action = State()
 
 
 async def cmd_devices(message: Message):
@@ -213,7 +210,6 @@ async def device_action_callback(callback: CallbackQuery, state: FSMContext):
                 return
             
             active = device.get('active', False)
-            status_text = "включено" if active else "выключено"
             
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
                 [

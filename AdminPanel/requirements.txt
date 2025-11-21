@@ -6,7 +6,7 @@ httpx==0.27.2
 starlette==0.47.3
 environs==14.3.0
 python-dotenv==1.1.1
-python-logging-loki==0.3.1
 requests==2.32.5
 rfc3339==6.2
 itsdangerous
+loguru==0.7.2

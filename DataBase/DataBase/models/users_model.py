@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ARRAY
-import logging
+from loguru import logger as user_model_logger
 from DataBase.core.db_connection import Base
-
-user_model_logger = logging.getLogger(__name__)
 
 
 class Users(Base):

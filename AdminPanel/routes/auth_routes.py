@@ -2,14 +2,13 @@ from fastapi import APIRouter, Request, Form, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from typing import Union
-import logging
+from loguru import logger
 
 from auth import verify_credentials
 from configurations import main_config
 
 router: APIRouter = APIRouter()
 templates: Jinja2Templates = Jinja2Templates(directory="templates")
-logger: logging.Logger = logging.getLogger(__name__)
 
 
 @router.get("/login", response_model=None)
