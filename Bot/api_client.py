@@ -16,6 +16,7 @@ class APIClient:
         """
         self.base_url: str = main_config.api.base_url
         self.client: httpx.AsyncClient = httpx.AsyncClient(timeout=30.0)
+        self.device_control_url: str | None = main_config.bot.device_control_url
     
     async def __aenter__(self) -> "APIClient":
         """
@@ -42,6 +43,27 @@ class APIClient:
         Close the HTTP client
         """
         await self.client.aclose()
+
+    async def send_device_packet(self, device_data: Dict[str, Any]) -> None:
+        """
+        Send device data to external controller if configured.
+        """
+        if not self.device_control_url:
+            return
+        try:
+            api_logger.info(
+                f"Sending device packet to controller: device_id={device_data.get('device_id')}"
+            )
+            response = await self.client.post(
+                self.device_control_url,
+                json=device_data,
+            )
+            response.raise_for_status()
+            api_logger.info("Device packet successfully delivered")
+        except httpx.HTTPStatusError:
+            api_logger.error('Controller rejected device packet', exc_info=True)
+        except Exception:
+            api_logger.error('Error sending device packet to controller', exc_info=True)
     
     # User methods
     async def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
@@ -182,7 +204,6 @@ class APIClient:
         try:
             api_logger.info('Request to create a new device')
             device_data = {
-                "device_id": 0,  # Will be auto-generated
                 "title": title,
                 "description": description,
                 "address": address,

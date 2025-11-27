@@ -45,7 +45,6 @@ services:
     volumes:
       - ./logs:/app/logs
       
-
   adminpanel:
     image: adminpanel
     build:

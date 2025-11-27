@@ -1,16 +1,28 @@
 from loguru import logger
 from aiogram import Dispatcher, F
 from aiogram.filters import Command, StateFilter
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, User as TelegramUser
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from api_client import APIClient
+from lexicon import LEXICON, BUTTONS, STATUS_LABELS
 
 
 class DeviceStates(StatesGroup):
     waiting_for_title = State()
     waiting_for_description = State()
     waiting_for_address = State()
+
+
+async def _ensure_user_exists(client: APIClient, telegram_user: TelegramUser):
+    """
+    Make sure the user exists in the backend; create automatically if missing.
+    """
+    user = await client.get_user_by_id(telegram_user.id)
+    if not user:
+        username = telegram_user.username or f"user_{telegram_user.id}"
+        user = await client.create_user(telegram_user.id, username)
+    return user
 
 
 async def cmd_devices(message: Message):
@@ -25,72 +37,65 @@ async def list_devices_callback(callback: CallbackQuery):
     Handle callback for listing devices
     """
     await callback.answer()
-    await list_devices_handler(callback.message)
+    await list_devices_handler(callback.message, callback.from_user)
 
 
-async def list_devices_handler(message: Message):
+async def list_devices_handler(message: Message, telegram_user: TelegramUser | None = None):
     """
     List all devices for the user
     """
     try:
-        user_id = message.from_user.id
+        telegram_user = telegram_user or message.from_user
+        user_id = telegram_user.id
         
         async with APIClient() as client:
-            # Check if user exists and is active
-            user = await client.get_user_by_id(user_id)
-            if not user:
-                await message.answer("❌ Вы не зарегистрированы. Используйте /start")
-                return
+            user = await _ensure_user_exists(client, telegram_user)
             
             if not user.get('active', True):
-                await message.answer("❌ Ваш аккаунт заблокирован.")
+                await message.answer(LEXICON["account_blocked"])
                 return
             
             devices = await client.get_all_devices(user_id)
             
             if not devices:
-                await message.answer(
-                    "📱 <b>Ваши устройства</b>\n\n"
-                    "У вас пока нет устройств.\n"
-                    "Используйте /add_device для добавления нового устройства."
-                )
+                await message.answer(LEXICON["no_devices"])
                 return
             
-            text = "📱 <b>Ваши устройства:</b>\n\n"
+            text = LEXICON["devices_list_header"]
             keyboard_buttons = []
             
             for device in devices:
                 device_id = device.get('device_id')
-                title = device.get('title', 'Без названия')
+                title = device.get('title', STATUS_LABELS["title_unknown"])
                 description = device.get('description', '')
                 active = device.get('active', False)
-                status = "🟢 Включено" if active else "🔴 Выключено"
+                status = STATUS_LABELS["on"] if active else STATUS_LABELS["off"]
                 
                 text += f"<b>{title}</b>\n"
                 text += f"ID: {device_id}\n"
                 if description:
                     text += f"Описание: {description}\n"
                 text += f"Статус: {status}\n"
-                text += f"Адрес: {device.get('address', 'Не указан')}\n"
+                text += f"Адрес: {device.get('address', STATUS_LABELS['address_unknown'])}\n"
                 text += "─" * 20 + "\n"
                 
                 keyboard_buttons.append([
                     InlineKeyboardButton(
-                        text=f"{title} ({'🟢' if active else '🔴'})",
+                        text=f"{title} ({STATUS_LABELS['icon_on'] if active else STATUS_LABELS['icon_off']})",
                         callback_data=f"device_{device_id}"
                     )
                 ])
             
             keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons + [
-                [InlineKeyboardButton(text="➕ Добавить устройство", callback_data="add_device")],
-                [InlineKeyboardButton(text="🔙 Главное меню", callback_data="main_menu")]
+                [InlineKeyboardButton(text=BUTTONS["add_device"], callback_data="add_device")],
+                [InlineKeyboardButton(text=BUTTONS["main_menu"], callback_data="main_menu")]
             ])
             
             await message.answer(text, reply_markup=keyboard)
             
     except Exception as e:
         logger.error('Error listing devices', exc_info=True)
-        await message.answer("❌ Произошла ошибка при получении списка устройств.")
+        await message.answer(LEXICON["list_devices_error"])
 
 
 async def add_device_callback(callback: CallbackQuery, state: FSMContext):
@@ -98,30 +103,27 @@ async def add_device_callback(callback: CallbackQuery, state: FSMContext):
     Handle callback for adding device
     """
     await callback.answer()
-    await add_device_start(callback.message, state)
+    await add_device_start(callback.message, state, callback.from_user)
 
 
-async def add_device_start(message: Message, state: FSMContext):
+async def add_device_start(message: Message, state: FSMContext, telegram_user: TelegramUser | None = None):
     """
     Start adding device process
     """
     try:
-        user_id = message.from_user.id
+        telegram_user = telegram_user or message.from_user
         
         async with APIClient() as client:
-            user = await client.get_user_by_id(user_id)
-            if not user or not user.get('active', True):
-                await message.answer("❌ Ваш аккаунт заблокирован или вы не зарегистрированы.")
+            user = await _ensure_user_exists(client, telegram_user)
+            if not user.get('active', True):
+                await message.answer(LEXICON["account_blocked"])
                 return
         
         await state.set_state(DeviceStates.waiting_for_title)
-        await message.answer(
-            "➕ <b>Добавление нового устройства</b>\n\n"
-            "Введите название устройства:"
-        )
+        await message.answer(LEXICON["add_device_intro"])
     except Exception as e:
         logger.error('Error starting add device', exc_info=True)
-        await message.answer("❌ Произошла ошибка.")
+        await message.answer(LEXICON["add_device_error"])
 
 
 async def process_title(message: Message, state: FSMContext):
@@ -130,12 +132,12 @@ async def process_title(message: Message, state: FSMContext):
     """
     title = message.text.strip()
     if not title or len(title) > 100:
-        await message.answer("❌ Название не может быть пустым или длиннее 100 символов. Попробуйте снова:")
+        await message.answer(LEXICON["invalid_title"])
         return
     
     await state.update_data(title=title)
     await state.set_state(DeviceStates.waiting_for_description)
-    await message.answer("Введите описание устройства:")
+    await message.answer(LEXICON["ask_description"])
 
 
 async def process_description(message: Message, state: FSMContext):
@@ -144,12 +146,12 @@ async def process_description(message: Message, state: FSMContext):
     """
     description = message.text.strip()
     if len(description) > 500:
-        await message.answer("❌ Описание не может быть длиннее 500 символов. Попробуйте снова:")
+        await message.answer(LEXICON["invalid_description"])
         return
     
     await state.update_data(description=description)
     await state.set_state(DeviceStates.waiting_for_address)
-    await message.answer("Введите адрес устройства (например, комната, IP-адрес и т.д.):")
+    await message.answer(LEXICON["ask_address"])
 
 
 async def process_address(message: Message, state: FSMContext):
@@ -158,7 +160,7 @@ async def process_address(message: Message, state: FSMContext):
     """
     address = message.text.strip()
     if not address or len(address) > 200:
-        await message.answer("❌ Адрес не может быть пустым или длиннее 200 символов. Попробуйте снова:")
+        await message.answer(LEXICON["invalid_address"])
         return
     
     try:
@@ -175,15 +177,16 @@ async def process_address(message: Message, state: FSMContext):
         
         await state.clear()
         await message.answer(
-            f"✅ <b>Устройство успешно добавлено!</b>\n\n"
-            f"Название: {device.get('title')}\n"
-            f"ID: {device.get('device_id')}\n"
-            f"Адрес: {device.get('address')}"
+            LEXICON["device_added"].format(
+                title=device.get('title'),
+                device_id=device.get('device_id'),
+                address=device.get('address')
+            )
         )
         
     except Exception as e:
         logger.error('Error creating device', exc_info=True)
-        await message.answer("❌ Произошла ошибка при создании устройства. Попробуйте позже.")
+        await message.answer(LEXICON["create_device_error"])
         await state.clear()
 
 
@@ -195,18 +198,19 @@ async def device_action_callback(callback: CallbackQuery, state: FSMContext):
     
     try:
         device_id = int(callback.data.split('_')[1])
-        user_id = callback.from_user.id
+        telegram_user = callback.from_user
+        user_id = telegram_user.id
         
         async with APIClient() as client:
             device = await client.get_device_by_id(device_id)
             if not device:
-                await callback.message.answer("❌ Устройство не найдено.")
+                await callback.message.answer(LEXICON["device_not_found"])
                 return
             
             # Check if device belongs to user
-            user = await client.get_user_by_id(user_id)
+            user = await _ensure_user_exists(client, telegram_user)
             if not user or device_id not in user.get('devices', []):
-                await callback.message.answer("❌ У вас нет доступа к этому устройству.")
+                await callback.message.answer(LEXICON["no_device_access"])
                 return
             
             active = device.get('active', False)
@@ -214,27 +218,27 @@ async def device_action_callback(callback: CallbackQuery, state: FSMContext):
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="🟢 Включить" if not active else "🔴 Выключить",
+                        text=STATUS_LABELS["toggle_on"] if not active else STATUS_LABELS["toggle_off"],
                         callback_data=f"toggle_{device_id}"
                     )
                 ],
-                [InlineKeyboardButton(text="🗑 Удалить", callback_data=f"delete_{device_id}")],
-                [InlineKeyboardButton(text="🔙 Назад к списку", callback_data="list_devices")]
+                [InlineKeyboardButton(text=BUTTONS["delete_device"], callback_data=f"delete_{device_id}")],
+                [InlineKeyboardButton(text=BUTTONS["back_to_devices"], callback_data="list_devices")]
             ])
             
             await callback.message.answer(
                 f"<b>{device.get('title')}</b>\n\n"
                 f"ID: {device_id}\n"
-                f"Описание: {device.get('description', 'Не указано')}\n"
-                f"Адрес: {device.get('address', 'Не указан')}\n"
-                f"Статус: {'🟢 Включено' if active else '🔴 Выключено'}\n"
-                f"Создано: {device.get('create_time', 'Неизвестно')}",
+                f"Описание: {device.get('description', STATUS_LABELS['description_unknown'])}\n"
+                f"Адрес: {device.get('address', STATUS_LABELS['address_unknown'])}\n"
+                f"Статус: {STATUS_LABELS['on'] if active else STATUS_LABELS['off']}\n"
+                f"Создано: {device.get('create_time', STATUS_LABELS['created_unknown'])}",
                 reply_markup=keyboard
             )
             
     except Exception as e:
         logger.error('Error in device action callback', exc_info=True)
-        await callback.message.answer("❌ Произошла ошибка.")
+        await callback.message.answer(LEXICON["generic_error"])
 
 
 async def toggle_device_callback(callback: CallbackQuery):
@@ -245,32 +249,39 @@ async def toggle_device_callback(callback: CallbackQuery):
     
     try:
         device_id = int(callback.data.split('_')[1])
-        user_id = callback.from_user.id
+        telegram_user = callback.from_user
+        user_id = telegram_user.id
         
         async with APIClient() as client:
             device = await client.get_device_by_id(device_id)
             if not device:
-                await callback.message.answer("❌ Устройство не найдено.")
+                await callback.message.answer(LEXICON["device_not_found"])
                 return
             
-            user = await client.get_user_by_id(user_id)
+            user = await _ensure_user_exists(client, telegram_user)
             if not user or device_id not in user.get('devices', []):
-                await callback.message.answer("❌ У вас нет доступа к этому устройству.")
+                await callback.message.answer(LEXICON["no_device_access"])
                 return
             
             # Toggle device
             new_active = not device.get('active', False)
             await client.update_device(device_id, {"active": new_active})
             
-            status_text = "включено" if new_active else "выключено"
-            await callback.message.answer(f"✅ Устройство {status_text}.")
+            updated_device = await client.get_device_by_id(device_id)
+            if updated_device:
+                await client.send_device_packet(updated_device)
+
+            status_text = STATUS_LABELS["text_on"] if new_active else STATUS_LABELS["text_off"]
+            await callback.message.answer(
+                LEXICON["device_toggle_success"].format(status=status_text)
+            )
             
             # Update the device list
-            await list_devices_handler(callback.message)
+            await list_devices_handler(callback.message, callback.from_user)
             
     except Exception as e:
         logger.error('Error toggling device', exc_info=True)
-        await callback.message.answer("❌ Произошла ошибка при изменении статуса устройства.")
+        await callback.message.answer(LEXICON["toggle_error"])
 
 
 async def delete_device_callback(callback: CallbackQuery):
@@ -281,28 +292,31 @@ async def delete_device_callback(callback: CallbackQuery):
     
     try:
         device_id = int(callback.data.split('_')[1])
-        user_id = callback.from_user.id
+        telegram_user = callback.from_user
+        user_id = telegram_user.id
         
         async with APIClient() as client:
             device = await client.get_device_by_id(device_id)
             if not device:
-                await callback.message.answer("❌ Устройство не найдено.")
+                await callback.message.answer(LEXICON["device_not_found"])
                 return
             
-            user = await client.get_user_by_id(user_id)
+            user = await _ensure_user_exists(client, telegram_user)
             if not user or device_id not in user.get('devices', []):
-                await callback.message.answer("❌ У вас нет доступа к этому устройству.")
+                await callback.message.answer(LEXICON["no_device_access"])
                 return
             
             await client.delete_device(device_id, user_id)
-            await callback.message.answer(f"✅ Устройство '{device.get('title')}' удалено.")
+            await callback.message.answer(
+                LEXICON["device_deleted"].format(title=device.get('title'))
+            )
             
             # Update the device list
-            await list_devices_handler(callback.message)
+            await list_devices_handler(callback.message, callback.from_user)
             
     except Exception as e:
         logger.error('Error deleting device', exc_info=True)
-        await callback.message.answer("❌ Произошла ошибка при удалении устройства.")
+        await callback.message.answer(LEXICON["delete_error"])
 
 
 async def help_callback(callback: CallbackQuery):
@@ -310,15 +324,7 @@ async def help_callback(callback: CallbackQuery):
     Handle help callback
     """
     await callback.answer()
-    await callback.message.answer(
-        "📋 <b>Доступные команды:</b>\n\n"
-        "/start - Начать работу с ботом\n"
-        "/help - Показать справку\n"
-        "/devices - Показать все ваши устройства\n"
-        "/add_device - Добавить новое устройство\n"
-        "/menu - Показать главное меню\n\n"
-        "💡 Используйте кнопки меню для быстрого доступа к функциям."
-    )
+    await callback.message.answer(LEXICON["help_text"])
 
 
 async def main_menu_callback(callback: CallbackQuery):

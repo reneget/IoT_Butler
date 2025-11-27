@@ -17,7 +17,7 @@ class User(BaseModel):
 class UserUpdate(BaseModel):
     active: Optional[bool] = None
     devices: Optional[list[int]] = None
-    device_counter: Optional[list[int]] = None
+    device_counter: Optional[int] = None
 
 
 class UserCreate(BaseModel):
@@ -41,7 +41,6 @@ class DeviceUpdate(BaseModel):
     active: Optional[bool]
 
 class DeviceCreate(BaseModel):
-    device_id: int
     title: str
     description: str
     address: str

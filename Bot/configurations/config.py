@@ -16,6 +16,7 @@ class BotConfig:
     Configuration class for Telegram Bot
     """
     token: str
+    device_control_url: str | None = None
 
 
 @dataclass
@@ -41,7 +42,8 @@ def load_config() -> Config:
             base_url=env.str("API_BASE_URL", default="http://database:8000")
         ),
         bot=BotConfig(
-            token=env.str("BOT_TOKEN", default="")
+            token=env.str("BOT_TOKEN", default=""),
+            device_control_url=env.str("DEVICE_CONTROL_URL", default="").strip() or None
         )
     )
 

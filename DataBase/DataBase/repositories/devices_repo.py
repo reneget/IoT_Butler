@@ -20,7 +20,9 @@ class DevicesRepo:
             devices_logger.info(f'Successful creation of a device [{repr(device)}] in the database')
             return device
         except Exception:
-            devices_logger.error(f'Error when creating a new device in the database', exc_info=True)
+            self.db.rollback()
+            devices_logger.error('Error when creating a new device in the database', exc_info=True)
+            raise
 
     def get_device_by_id(self, device_id: int) -> Optional[Devices] | None:
         try:
@@ -28,7 +30,8 @@ class DevicesRepo:
             devices_logger.info(f'Successfully retrieving the device [{repr(device)}] from the database')
             return device
         except Exception:
-            devices_logger.error(f'Error when getting device [{device}] from DataBase', exc_info=True)
+            devices_logger.error(f'Error when getting device [{device_id}] from DataBase', exc_info=True)
+            raise
 
     def get_all_devices(self) -> list[Type[Devices]] | None:
         try:
@@ -36,29 +39,34 @@ class DevicesRepo:
             devices_logger.info('Successfully retrieving list of all devices from the database')
             return device
         except Exception:
-            devices_logger.error(f'Error when getting all devices from DataBase', exc_info=True)
+            devices_logger.error('Error when getting all devices from DataBase', exc_info=True)
+            raise
 
-    def update_device(self, position_id: int, **new_values) -> Type[Devices] | None:
-        position = self.get_position_by_id(position_id)
+    def update_device(self, device_id: int, **new_values) -> Optional[Devices]:
+        device = self.get_device_by_id(device_id)
         try:
-            if position:
+            if device:
                 for key, value in new_values.items():
-                    if hasattr(position, key) and value is not None:
-                        setattr(position, key, value)
+                    if hasattr(device, key) and value is not None:
+                        setattr(device, key, value)
                 self.db.commit()
-                self.db.refresh(position)
-            devices_logger.info(f'Successfully update position [{repr(position)}] in DataBase')
-            return position
+                self.db.refresh(device)
+                devices_logger.info(f'Successfully updated device [{repr(device)}] in DataBase')
+            return device
         except Exception:
-            devices_logger.error(f'Error when updating position [{repr(position)}] in DataBase')
+            self.db.rollback()
+            devices_logger.error(f'Error when updating device [{device_id}] in DataBase', exc_info=True)
+            raise
 
-    def delete_device(self, position_id: int) -> Type[Devices] | None:
-        position = self.get_position_by_id(position_id)
+    def delete_device(self, device_id: int) -> Optional[Devices]:
+        device = self.get_device_by_id(device_id)
         try:
-            if position:
-                self.db.delete(position)
+            if device:
+                self.db.delete(device)
                 self.db.commit()
-                devices_logger.info(f'Successfully delete position [{repr(position)}] from DataBase')
-            return position
+                devices_logger.info(f'Successfully deleted device [{repr(device)}] from DataBase')
+            return device
         except Exception:
-            devices_logger.error(f'Error when deleting position [{repr(position)}] from Database')
+            self.db.rollback()
+            devices_logger.error(f'Error when deleting device [{device_id}] from Database', exc_info=True)
+            raise
